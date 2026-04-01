@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "pptx": {
+      "command": "python",
+      "args": ["-m", "pptx_mcp.server"]
+    }
+  }
+}
