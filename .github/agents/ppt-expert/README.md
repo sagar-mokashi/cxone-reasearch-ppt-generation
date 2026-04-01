@@ -88,6 +88,14 @@ Build behavior:
 3. Build PPT using template
 4. Save project_presentation.pptx
 
+## Where to Keep the Input ZIP or Code Repository
+- Place your zip or complete code repo folder in root or .github/agents/ppt-expert path in the current setup.
+- Attach the ZIP directly in your Copilot prompt (for example: `#<your_file/folder_name>`).
+
+Recommended location in this workspace:
+- `./your-repo.zip`
+
+
 ## Tools and Runtime Setup
 Python dependencies used by implementation:
 - python-pptx
