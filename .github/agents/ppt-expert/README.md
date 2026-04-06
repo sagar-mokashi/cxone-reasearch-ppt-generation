@@ -59,7 +59,7 @@ Branching behavior:
 
 ### Phase 2: README Generation or Refresh
 Goal:
-- Produce root README.md only if phase 1 fails or no valid README exists.
+- Produce `output/README.md` only if phase 1 fails or no valid README exists.
 
 Expected behavior:
 - Analyze Python source files fully
@@ -68,12 +68,12 @@ Expected behavior:
 
 ### Phase 3: Slide JSON and Mermaid Generation
 Input source of truth:
-- Workspace root README.md
+- `output/README.md`
 
-Outputs written at workspace root:
-- presentation_data.json
-- architecture_system.mmd
-- architecture_dataflow.mmd
+Outputs written in `output/`:
+- output/presentation_data.json
+- output/architecture_system.mmd
+- output/architecture_dataflow.mmd
 
 Slide structure target:
 - 9 business-facing slides from project overview through roadmap
@@ -83,10 +83,10 @@ Command:
 - python .github/agents/ppt-expert/main.py
 
 Build behavior:
-1. Load presentation_data.json
+1. Load output/presentation_data.json
 2. Render Mermaid to PNG via mmdc
 3. Build PPT using template
-4. Save project_presentation.pptx
+4. Save output/project_presentation.pptx
 
 ## Where to Keep the Input ZIP or Code Repository
 - Place your zip or complete code repo folder in root or .github/agents/ppt-expert path in the current setup.
@@ -157,7 +157,7 @@ Example manual config (if needed):
 - Presentation generation completes without Jira context
 
 ## Mermaid CLI (mmdc) Setup
-This setup requires mermaid-cli to render architecture_system.mmd and architecture_dataflow.mmd into PNG files.
+This setup requires mermaid-cli to render output/architecture_system.mmd and output/architecture_dataflow.mmd into PNG files.
 
 Install on Windows (PowerShell):
 1. Install Node.js LTS if not installed.
@@ -170,12 +170,12 @@ Optional fallback check (path used by this workspace code):
 - C:\Users\sagarm\AppData\Roaming\npm\mmdc.cmd --version
 
 Manual render commands for troubleshooting:
-- mmdc -i architecture_system.mmd -o architecture_system.png
-- mmdc -i architecture_dataflow.mmd -o architecture_dataflow.png
+- mmdc -i output/architecture_system.mmd -o output/architecture_system.png
+- mmdc -i output/architecture_dataflow.mmd -o output/architecture_dataflow.png
 
 Expected outputs:
-- architecture_system.png
-- architecture_dataflow.png
+- output/architecture_system.png
+- output/architecture_dataflow.png
 
 Common mmdc issues and fixes:
 - "mermaid-cli not found": restart terminal or add npm global bin to PATH
@@ -192,14 +192,14 @@ Pipeline scripts:
 - .github/agents/ppt-expert/diagram_generator.py
 - .github/agents/ppt-expert/config.py
 
-Generated artifacts in workspace root:
-- README.md
-- presentation_data.json
-- architecture_system.mmd
-- architecture_dataflow.mmd
-- architecture_system.png
-- architecture_dataflow.png
-- project_presentation.pptx
+Generated artifacts in `output/`:
+- output/README.md
+- output/presentation_data.json
+- output/architecture_system.mmd
+- output/architecture_dataflow.mmd
+- output/architecture_system.png
+- output/architecture_dataflow.png
+- output/project_presentation.pptx
 
 ## Phase 1 Validation Record (Current Run)
 Validation performed against:
@@ -215,9 +215,9 @@ Why this matters:
 - Provides traceability to the exact file and decision rule from the agent contract.
 
 ## Execution Quick Steps
-1. Ensure presentation_data.json and architecture_*.mmd exist at workspace root.
+1. Ensure output/presentation_data.json and output/architecture_*.mmd exist.
 2. Run: python .github/agents/ppt-expert/main.py
-3. Verify output: project_presentation.pptx
+3. Verify output: output/project_presentation.pptx
 
 ## Sample Agent Input
 Example Copilot or Agent prompt:

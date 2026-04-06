@@ -5,8 +5,15 @@ import boto3
 from config import MMDC_CMD, INFERENCE_PROFILE
 
 # Paths to pre-generated Mermaid files (written by the Copilot agent in Phase 2)
-_SYSTEM_MMD = 'architecture_system.mmd'
-_DATAFLOW_MMD = 'architecture_dataflow.mmd'
+_AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_WORKSPACE_ROOT = os.path.abspath(os.path.join(_AGENT_DIR, "..", "..", ".."))
+_OUTPUT_DIR = os.path.join(_WORKSPACE_ROOT, "output")
+os.makedirs(_OUTPUT_DIR, exist_ok=True)
+
+_SYSTEM_MMD = os.path.join(_OUTPUT_DIR, 'architecture_system.mmd')
+_DATAFLOW_MMD = os.path.join(_OUTPUT_DIR, 'architecture_dataflow.mmd')
+_ROOT_SYSTEM_MMD = os.path.join(_WORKSPACE_ROOT, 'architecture_system.mmd')
+_ROOT_DATAFLOW_MMD = os.path.join(_WORKSPACE_ROOT, 'architecture_dataflow.mmd')
 
 
 def generate_architecture_diagram(business_summary):
@@ -20,10 +27,10 @@ def generate_architecture_diagram(business_summary):
     """
     # ── Preferred: render existing .mmd files written by the Copilot agent ──
     pregenerated_mmds = {
-        'system_architecture': _SYSTEM_MMD,
-        'data_flow': _DATAFLOW_MMD,
+        'system_architecture': _SYSTEM_MMD if os.path.exists(_SYSTEM_MMD) else _ROOT_SYSTEM_MMD,
+        'data_flow': _DATAFLOW_MMD if os.path.exists(_DATAFLOW_MMD) else _ROOT_DATAFLOW_MMD,
     }
-    if os.path.exists(_SYSTEM_MMD) or os.path.exists(_DATAFLOW_MMD):
+    if any(os.path.exists(path) for path in pregenerated_mmds.values()):
         print("\n  → Using pre-generated Mermaid files from Copilot agent...")
         mermaid_code = {}
         for key, mmd_file in pregenerated_mmds.items():
@@ -52,8 +59,18 @@ def _render_diagrams(mermaid_code):
     diagram_files = []
 
     diagram_map = [
-        ('system_architecture', 'architecture_system.mmd',    'architecture_system.png',    'system architecture'),
-        ('data_flow',           'architecture_dataflow.mmd',  'architecture_dataflow.png',  'data flow'),
+        (
+            'system_architecture',
+            os.path.join(_OUTPUT_DIR, 'architecture_system.mmd'),
+            os.path.join(_OUTPUT_DIR, 'architecture_system.png'),
+            'system architecture',
+        ),
+        (
+            'data_flow',
+            os.path.join(_OUTPUT_DIR, 'architecture_dataflow.mmd'),
+            os.path.join(_OUTPUT_DIR, 'architecture_dataflow.png'),
+            'data flow',
+        ),
     ]
 
     for key, mermaid_file, png_file, label in diagram_map:

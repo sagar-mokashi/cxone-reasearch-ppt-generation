@@ -7,6 +7,7 @@ from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 import os
 from datetime import datetime
+from config import OUTPUT_FILE
 
 
 SLIDE_BG = RGBColor(255, 255, 255)
@@ -448,7 +449,7 @@ def add_thank_you_slide(prs, thank_you_path=None):
     p.font.color.rgb = TITLE_BG
 
 
-def create_ppt(slides, diagram_files=None, output_file="project_presentation.pptx", template_file=None, project_title="Project Presentation"):
+def create_ppt(slides, diagram_files=None, output_file=OUTPUT_FILE, template_file=None, project_title="Project Presentation"):
     """
     Create a PowerPoint presentation from slides data.
     

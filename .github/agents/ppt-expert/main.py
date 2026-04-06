@@ -6,14 +6,18 @@ from config import TEMPLATE_FILE, OUTPUT_FILE
 
 _AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
 _WORKSPACE_ROOT = os.path.abspath(os.path.join(_AGENT_DIR, "..", "..", ".."))
-PRESENTATION_DATA_FILE = os.path.join(_WORKSPACE_ROOT, "presentation_data.json")
+OUTPUT_DIR = os.path.join(_WORKSPACE_ROOT, "output")
+PRESENTATION_DATA_FILE = os.path.join(OUTPUT_DIR, "presentation_data.json")
+ROOT_PRESENTATION_DATA_FILE = os.path.join(_WORKSPACE_ROOT, "presentation_data.json")
 LEGACY_PRESENTATION_DATA_FILE = os.path.join(_AGENT_DIR, "presentation_data.json")
 
 
 def _get_presentation_data_path():
-    """Prefer workspace-root slide data, fall back to agent directory."""
+    """Prefer output-folder slide data, keep root and legacy fallbacks."""
     if os.path.exists(PRESENTATION_DATA_FILE):
         return PRESENTATION_DATA_FILE
+    if os.path.exists(ROOT_PRESENTATION_DATA_FILE):
+        return ROOT_PRESENTATION_DATA_FILE
     if os.path.exists(LEGACY_PRESENTATION_DATA_FILE):
         return LEGACY_PRESENTATION_DATA_FILE
     return PRESENTATION_DATA_FILE
@@ -42,12 +46,12 @@ def run_agent(template_path=TEMPLATE_FILE):
 
     Pipeline:
       Agent Phase 1 → validates / writes README.md
-      Agent Phase 2 → writes presentation_data.json + architecture_*.mmd
+            Agent Phase 2 → writes output/presentation_data.json + output/architecture_*.mmd
       This script   → renders .mmd → PNG, then builds .pptx
     """
     pregenerated = _load_pregenerated_slides()
     if not pregenerated:
-        print("✗ presentation_data.json not found.")
+        print("✗ output/presentation_data.json not found.")
         print("  Run the Copilot agent phases first to generate the required artifacts.")
         return False
 

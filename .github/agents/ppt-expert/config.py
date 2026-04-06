@@ -6,12 +6,15 @@ import shutil
 # Paths
 # ─────────────────────────────────────────────
 _AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_WORKSPACE_ROOT = os.path.abspath(os.path.join(_AGENT_DIR, "..", "..", ".."))
+OUTPUT_DIR = os.path.join(_WORKSPACE_ROOT, "output")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Default PowerPoint template (.pptx)
 TEMPLATE_FILE = os.path.join(_AGENT_DIR, "template", "nice_template.pptx")
 
-# Output file name for the generated presentation
-OUTPUT_FILE = "project_presentation.pptx"
+# Output file path for the generated presentation
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "project_presentation.pptx")
 
 # ─────────────────────────────────────────────
 # Diagram Generation (mmdc)

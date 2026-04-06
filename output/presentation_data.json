@@ -1,0 +1,104 @@
+{
+  "project_title": "Workflow Diagram Intelligence Pipeline",
+  "slides": [
+    {
+      "title": "Project Overview",
+      "points": [
+        "Builds a proof of concept to infer customer journeys from process diagrams in PDF files.",
+        "Converts visual workflow diagrams into structured workflow JSON for downstream orchestration use.",
+        "Targets data scientists and platform teams evaluating scalable process understanding automation.",
+        "Combines diagram extraction, flow interpretation, metadata generation, and normalized output packaging.",
+        "Uses AWS Bedrock Claude models to blend vision analysis and deterministic text transformation.",
+        "Improves repeatability versus manual diagram reading and ad hoc flow reconstruction."
+      ]
+    },
+    {
+      "title": "Business Problem",
+      "points": [
+        "Process diagrams are often trapped in PDFs and hard to convert into machine-usable workflow structures.",
+        "Manual interpretation is slow, inconsistent, and sensitive to analyst assumptions.",
+        "Decision branches, edge labels, and loopbacks are frequently missed during hand extraction.",
+        "Static tooling struggles with mixed shapes, swimlanes, and image quality variation.",
+        "Teams need reliable conversion to journey-ready JSON for analysis and orchestration experiments.",
+        "Research required balancing classical libraries with AI-driven extraction quality."
+      ]
+    },
+    {
+      "title": "Solution Overview",
+      "points": [
+        "Implements a three-stage pipeline optimized for workflow understanding and cost control.",
+        "Stage 1 performs vision-based node and arrow extraction with strict anti-hallucination constraints.",
+        "Stage 2 translates extracted structure into executable Mermaid flowchart syntax.",
+        "Stage 3 derives business workflow name and description from Stage 1 output.",
+        "Parser converts Mermaid nodes and connections into orchestrator-compatible JSON objects.",
+        "Validation filters non-workflow pages before expensive model execution."
+      ]
+    },
+    {
+      "title": "Detailed Step-Wise Execution Flow",
+      "points": [
+        "Step 1: Load input PDF and rasterize pages into high-resolution workflow images.",
+        "Step 2: Validate candidate pages using edge density and directional pattern heuristics.",
+        "Step 3: Enhance accepted images for readability while preserving structural fidelity.",
+        "Step 4: Run vision model to extract node types, arrows, labels, and backward links.",
+        "Step 5: Convert structured text into Mermaid with explicit connection rules.",
+        "Step 6: Parse Mermaid into tasks, decisions, branches, and final workflow JSON files."
+      ]
+    },
+    {
+      "title": "Core Capabilities & Architecture",
+      "points": [
+        "Supports extraction of workflow images from PDFs as reusable preprocessing capability.",
+        "Evaluates AI-driven inference quality using measurable outputs and scenario comparison.",
+        "Creates benchmarkable datasets and token-cost traces for objective experimentation.",
+        "Captures edge labels and decision branches for richer control-flow semantics.",
+        "Maintains modular architecture: conversion, extraction, parsing, cost analysis, and orchestration.",
+        "Produces standardized JSON artifacts suitable for customer journey interpretation workflows."
+      ]
+    },
+    {
+      "title": "Advantages",
+      "points": [
+        "Reduces manual effort and accelerates workflow understanding from legacy process diagrams.",
+        "Improves extraction consistency through staged prompts and parser-backed transformation.",
+        "Balances quality and cost via hybrid model strategy across pipeline stages.",
+        "Preserves decision semantics using branch-aware JSON conversion logic.",
+        "Enables rapid experimentation across multiple diagrams with repeatable output structure.",
+        "Provides clear observability with token accounting and stage-level diagnostics."
+      ]
+    },
+    {
+      "title": "Limitations",
+      "points": [
+        "Performance depends on diagram clarity, scan quality, and complex layout density.",
+        "Node and arrow detection can degrade on heavily stylized or ambiguous diagrams.",
+        "Mermaid parsing assumes coherent model output and may skip uncertain connections.",
+        "Prompt-driven extraction may require tuning for domain-specific notation patterns.",
+        "Current implementation focuses on proof-of-concept reliability over production hardening.",
+        "Legacy scripts indicate competing approaches still under consolidation."
+      ]
+    },
+    {
+      "title": "Risks & Implementation Considerations",
+      "points": [
+        "Model output variability may introduce structural drift between runs on edge-case diagrams.",
+        "Cloud dependency requires stable Bedrock access, credentials, and regional configuration.",
+        "Cost can rise with large document sets without strict page filtering and batching.",
+        "Missing or unclear arrow labels can weaken downstream branch interpretation quality.",
+        "Governance needed to validate inferred workflows before operational deployment.",
+        "Fallback strategies should cover parser failures and ambiguous topology detection."
+      ]
+    },
+    {
+      "title": "Roadmap & Next Steps",
+      "points": [
+        "Harden extraction with broader test corpus and automated quality scoring.",
+        "Expand benchmark dataset to include varied industries and notation styles.",
+        "Refine non-AI and AI hybrid options for maintainability and runtime cost.",
+        "Package pipeline into reusable service interface for orchestration consumers.",
+        "Add human-in-the-loop review for low-confidence workflow segments.",
+        "Publish recommendation framework for scaling from POC to production."
+      ]
+    }
+  ]
+}

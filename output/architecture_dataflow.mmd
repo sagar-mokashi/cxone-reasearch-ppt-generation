@@ -1,0 +1,12 @@
+flowchart TD
+    A[PDF Document] --> B[Render Pages as Images]
+    B --> C{Workflow Page?}
+    C -->|No| Z[Skip Page]
+    C -->|Yes| D[Enhance Image]
+    D --> E[Extract Nodes and Arrows]
+    E --> F[Generate Mermaid Flow]
+    E --> G[Extract Name and Description]
+    F --> H[Parse Nodes and Connections]
+    G --> H
+    H --> I[Build Decision-Aware JSON]
+    I --> J[Save Workflow Artifact]
