@@ -1,82 +1,126 @@
 # PPT Expert Setup README (Agent-Driven)
 
 ## Scope
-This README is generated from the agent contract defined in:
+This document describes the current operating model for the PPT Expert agent and aligns with:
 - .github/agents/ppt-expert.agent.md
 
-It documents how the setup is expected to run, phase by phase, and which files are used.
+## Operating Model: Two Parts
+The workflow is split into two parts.
 
-## Agent MD Reference
-Primary specification source:
-- .github/agents/ppt-expert.agent.md
+### Part A: README Validation and Generation
+Part A includes:
+- Phase 1: README validation
+- Phase 2: README generation or refresh (only if needed)
 
-Supporting implementation files:
-- .github/agents/ppt-expert/main.py
-- .github/agents/ppt-expert/generate_ppt.py
-- .github/agents/ppt-expert/diagram_generator.py
-- .github/agents/ppt-expert/config.py
+Part A output:
+- output/README.md
 
-## End-to-End Phases
-The agent contract defines 4 phases.
+Part A rules:
+- Jira or Atlassian MCP tools are not used in Part A.
+- If a Jira key is present in the initial prompt, it is ignored until Part B.
+- Part A must complete before any PPT work starts.
+
+### Part B: PPT Creation
+Part B includes:
+- Phase 3: slide JSON and Mermaid source generation
+- Phase 4: PPT build
+
+Part B outputs:
+- output/presentation_data.json
+- output/architecture_system.mmd
+- output/architecture_dataflow.mmd
+- output/project_presentation.pptx
+
+## Part A Completion Gate (Mandatory)
+After output/README.md is ready:
+1. Report Part A completion in chat.
+2. Ask this exact question:
+   README is ready. Do you want me to proceed with PPT creation (Part B)?
+3. Start Part B only after explicit user approval.
+
+Prompt mechanism:
+- Preferred: interactive prompt via vscode_askQuestions with options:
+  - Yes, proceed to Part B
+  - No, stop after Part A
+- Fallback: typed yes or no in chat if interactive options are not rendered in the current UI.
+
+## ZIP Extraction Naming Convention (Mandatory)
+When extracting an attached ZIP, use the ZIP filename (without .zip) as the extraction folder name.
+
+Example:
+- process-pdf-diagrams-with-readme.zip -> process-pdf-diagrams-with-readme
+
+Rules:
+- Do not use generic names such as extracted_project or zip_extracted.
+- If the target folder already exists, overwrite or recreate that same deterministic folder.
+- Use this extracted folder as the project root for README discovery and analysis.
+
+## Part A Details
 
 ### Phase 1: README Validation
 Goal:
-- Decide whether an existing README is strong enough to support PPT generation.
+- Decide whether an existing README is strong enough for downstream presentation generation.
 
-Discovery order:
-1. README inside attached repository or extracted ZIP
-2. Workspace root README
+README discovery order:
+1. README inside attached repository or extracted ZIP contents
+2. output/README.md in workspace
 3. Any README discovered while analyzing repository structure
 
-Validation checks (exactly 8):
-1. Problem solved and why it matters
+Validation checks (8):
+1. Problem solved and business value
 2. High-level system behavior
-3. Target users or use cases
-4. Major modules, workflow stages, or architecture components
-5. Primary inputs and outputs
+3. Target users and use cases
+4. Major modules or architecture components
+5. Inputs and outputs
 6. Setup or execution guidance
-7. Dependencies, configuration, models, cloud/runtime assumptions
-8. Enough detail for limitations, risks, and roadmap slides
+7. Dependencies/config/models/cloud/runtime assumptions
+8. Sufficient depth for limitations, risks, roadmap slides
 
-Decision rules:
-- PASS if score is at least 6 out of 8
-- FAIL if score is below 6 out of 8
-- FAIL immediately if any critical area is missing:
+Decision rule:
+- PASS if at least 6/8 checks pass
+- FAIL if fewer than 6/8 checks pass
+- Immediate FAIL if critical areas are missing:
   - project purpose
   - end-to-end flow
   - major components/modules
 
-Required validation output in chat:
+Chat output required:
 - README path evaluated
 - Score out of 8
 - Passed checks
 - Failed checks
 - Final decision: reference or regenerate
 
-Branching behavior:
-- If PASS: use that README as reference and proceed to phase 3
-- If FAIL or missing: run phase 2 to generate root README
+Branching:
+- PASS: copy/reference to output/README.md and complete Part A
+- FAIL/missing: run Phase 2 to generate output/README.md
 
 ### Phase 2: README Generation or Refresh
 Goal:
-- Produce `output/README.md` only if phase 1 fails or no valid README exists.
+- Produce output/README.md only when validation fails or no acceptable README exists.
 
 Expected behavior:
-- Analyze Python source files fully
-- Document architecture, modules, setup, usage, configuration, outputs, stack
-- Save as workspace root README.md
+- Fully analyze Python source files
+- Document architecture, modules, setup, usage, configuration, outputs, and tech stack
+- Write final content to output/README.md
+
+## Part B Details
 
 ### Phase 3: Slide JSON and Mermaid Generation
 Input source of truth:
-- `output/README.md`
+- output/README.md
 
-Outputs written in `output/`:
+Outputs written in output/:
 - output/presentation_data.json
 - output/architecture_system.mmd
 - output/architecture_dataflow.mmd
 
-Slide structure target:
-- 9 business-facing slides from project overview through roadmap
+Optional Jira enrichment in Part B only:
+- mcp_com_atlassian_getJiraIssue
+- mcp_com_atlassian_searchJiraIssuesUsingJql
+- mcp_com_atlassian_getAccessibleAtlassianResources
+
+If Jira is unavailable, slide generation continues from README-only context.
 
 ### Phase 4: Build Presentation
 Command:
@@ -84,103 +128,58 @@ Command:
 
 Build behavior:
 1. Load output/presentation_data.json
-2. Render Mermaid to PNG via mmdc
-3. Build PPT using template
+2. Attempt Mermaid render (.mmd to .png)
+3. Build PPT from slides and any rendered diagram images
 4. Save output/project_presentation.pptx
 
-## Where to Keep the Input ZIP or Code Repository
-- Place your zip or complete code repo folder in root or .github/agents/ppt-expert path in the current setup.
-- Attach the ZIP directly in your Copilot prompt (for example: `#<your_file/folder_name>`).
-
-Recommended location in this workspace:
-- `./your-repo.zip`
-
+Mermaid failure behavior (validated):
+- If mmdc is missing or Mermaid render fails, PPT generation still proceeds.
+- Result: deck is created without diagram image slides.
 
 ## Tools and Runtime Setup
 Python dependencies used by implementation:
 - python-pptx
-- boto3 (diagram fallback path)
+- boto3 (only fallback diagram generation path)
 - standard library modules such as json, os, subprocess, datetime
 
 External tool:
 - mermaid-cli (mmdc) for .mmd to .png rendering
 
-MCP integrations:
-- Atlassian MCP tools (used for optional Jira enrichment in phase 3)
-
 Template assets:
 - .github/agents/ppt-expert/template/nice_template.pptx
-- .github/agents/ppt-expert/template/thank_you.pptx
 
-## Atlassian MCP Setup
-This setup supports optional Jira enrichment in phase 3 through Atlassian MCP tools referenced in the agent contract.
+## Atlassian MCP Setup (Part B Only)
+Use this only when user requests Jira-enriched slides.
 
-Tools expected by the flow:
+Steps:
+1. Install or use an available Atlassian MCP integration in VS Code/Copilot tools.
+2. Authenticate through OAuth when prompted.
+3. Verify access using mcp_com_atlassian_getAccessibleAtlassianResources.
+4. Use returned cloud ID for Jira calls.
+
+Primary Jira tools:
 - mcp_com_atlassian_getJiraIssue
 - mcp_com_atlassian_searchJiraIssuesUsingJql
-- mcp_com_atlassian_getAccessibleAtlassianResources
 
-**Installation (recommended via VS Code Marketplace):**
-1. Install the Atlassian MCP extension from VS Code Extensions Marketplace: **@mcp atlassian**
-2. The extension auto-registers with OAuth 2.1 authentication (no manual mcp.json entry needed)
-3. Reload VS Code when prompted to activate the extension
-4. First call to an Atlassian MCP tool will trigger OAuth browser sign-in
-5. Verify access by calling `mcp_com_atlassian_getAccessibleAtlassianResources` from Copilot chat
-
-**Alternative (manual mcp.json configuration):**
-If you prefer explicit config, use the command palette: **MCP: Open Workspace Configuration**
-
-Example manual config (if needed):
-```json
-{
-  "servers": {
-    "pptx": {
-      "command": "python",
-      "args": ["-m", "pptx_mcp.server"]
-    },
-    "atlassian": {
-      "command": "npx",
-      "args": ["-y", "@atlassian/mcp-server"]
-    }
-  }
-}
-```
-
-**Validation checklist:**
-- mcp_com_atlassian_getAccessibleAtlassianResources returns ≥1 Jira/Confluence cloud instances
-- mcp_com_atlassian_getJiraIssue succeeds for a known issue key (e.g., CEAR-6084)
-- mcp_com_atlassian_searchJiraIssuesUsingJql returns child stories or linked issues
-
-**If Atlassian MCP is unavailable or JIRA ticket is missing:**
-- Phase 3 still runs from README-only content
-- Jira enrichment is skipped gracefully (as defined in agent contract)
-- Presentation generation completes without Jira context
+If unavailable:
+- Skip Jira enrichment and continue with README-only slide generation.
 
 ## Mermaid CLI (mmdc) Setup
-This setup requires mermaid-cli to render output/architecture_system.mmd and output/architecture_dataflow.mmd into PNG files.
-
-Install on Windows (PowerShell):
-1. Install Node.js LTS if not installed.
+Install on Windows PowerShell:
+1. Install Node.js LTS.
 2. Install Mermaid CLI globally:
    npm install -g @mermaid-js/mermaid-cli
-3. Verify installation:
+3. Verify:
    mmdc --version
 
-Optional fallback check (path used by this workspace code):
-- C:\Users\sagarm\AppData\Roaming\npm\mmdc.cmd --version
-
-Manual render commands for troubleshooting:
+Troubleshooting commands:
 - mmdc -i output/architecture_system.mmd -o output/architecture_system.png
 - mmdc -i output/architecture_dataflow.mmd -o output/architecture_dataflow.png
 
-Expected outputs:
-- output/architecture_system.png
-- output/architecture_dataflow.png
-
-Common mmdc issues and fixes:
-- "mermaid-cli not found": restart terminal or add npm global bin to PATH
-- timeout during render: retry command and validate Mermaid syntax in .mmd file
-- blank image: simplify graph labels and re-run mmdc
+Common issues:
+- mmdc not found: restart terminal or add npm global bin to PATH
+- timeout: retry and validate Mermaid syntax
+- blank output: simplify graph labels and rerun
 
 ## Files Used in This Setup
 Agent definition:
@@ -192,7 +191,7 @@ Pipeline scripts:
 - .github/agents/ppt-expert/diagram_generator.py
 - .github/agents/ppt-expert/config.py
 
-Generated artifacts in `output/`:
+Generated artifacts in output/:
 - output/README.md
 - output/presentation_data.json
 - output/architecture_system.mmd
@@ -201,33 +200,9 @@ Generated artifacts in `output/`:
 - output/architecture_dataflow.png
 - output/project_presentation.pptx
 
-## Phase 1 Validation Record (Current Run)
-Validation performed against:
-- .github/agents/ppt-expert/cxone-cxmo-orchestrator-discovery-ai-engine-extracted/README.md
-
-Recorded result:
-- Score: 8 out of 8
-- Decision: reference
-- Critical areas present: yes
-
-Why this matters:
-- Confirms that README validation details are explicitly captured in setup documentation.
-- Provides traceability to the exact file and decision rule from the agent contract.
-
-## Execution Quick Steps
-1. Ensure output/presentation_data.json and output/architecture_*.mmd exist.
-2. Run: python .github/agents/ppt-expert/main.py
-3. Verify output: output/project_presentation.pptx
-
-## Sample Agent Input
-Example Copilot or Agent prompt:
-```
-Create ppt for #file:cxone-customer-journey-data-generation.zip and use context from jira epic CEAR-6084 to generate the slides
-```
-
-This will:
-1. Extract and analyze the ZIP file
-2. Validate or generate a README documenting the project
-3. Fetch Jira epic CEAR-6084 for business context enrichment
-4. Generate 9 business-facing slides with architecture diagrams
-5. Create project_presentation.pptx with embedded diagrams
+## Quick Execution
+1. Complete Part A and produce output/README.md.
+2. Confirm approval to start Part B.
+3. Generate slide JSON and Mermaid files.
+4. Run python .github/agents/ppt-expert/main.py.
+5. Verify output/project_presentation.pptx.
