@@ -33,12 +33,6 @@ extracted_project/
 zip_extracted/
 process-pdf-diagrams-with-readme/
 
-# Generated outputs
-output/*.png
-output/*.pptx
-output/*.json
-output/*.mmd
-output/README.md
 
 # Local archives
 *.zip

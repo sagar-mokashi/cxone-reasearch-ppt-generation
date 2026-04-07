@@ -1,21 +1,8 @@
 graph TD
-    A[PDF Input]
-    B[Page Extraction]
-    C[Workflow Page Validator]
-    D[Image Enhancement]
-    E[Stage 1 Vision Extraction]
-    F[Stage 2 Mermaid Generator]
-    G[Stage 3 Metadata Extractor]
-    H[Mermaid Parser and JSON Builder]
-    I[Workflow JSON Output]
-
-    A --> B
-    B --> C
-    C -->|Valid| D
-    C -->|Skip| B
-    D --> E
-    E --> F
-    E --> G
-    F --> H
-    G --> H
-    H --> I
+  A[ASR Transcripts and Intent Data] --> B[Workflow Extraction]
+  B --> C[Task Normalization]
+  C --> D[Sequence Clustering]
+  D --> E[Representative Workflow Selection]
+  E --> F[Quality Scoring]
+  F --> G[Structured Output Packaging]
+  G --> H[Analytics and Automation Teams]

@@ -1,103 +1,103 @@
 {
-  "project_title": "Workflow Diagram Intelligence Pipeline",
+  "project_title": "AI Workflow Discovery Engine",
   "slides": [
     {
       "title": "Project Overview",
       "points": [
-        "Builds a proof of concept to infer customer journeys from process diagrams in PDF files.",
-        "Converts visual workflow diagrams into structured workflow JSON for downstream orchestration use.",
-        "Targets data scientists and platform teams evaluating scalable process understanding automation.",
-        "Combines diagram extraction, flow interpretation, metadata generation, and normalized output packaging.",
-        "Uses AWS Bedrock Claude models to blend vision analysis and deterministic text transformation.",
-        "Improves repeatability versus manual diagram reading and ad hoc flow reconstruction."
+        "Analyzes contact center transcripts to discover recurring business workflows automatically.",
+        "Combines large language models with clustering to produce structured process intelligence.",
+        "Targets operations teams, automation architects, and CX optimization stakeholders.",
+        "Converts raw interaction text into normalized task sequences and workflow clusters.",
+        "Supports process mining and orchestration design from real customer conversations.",
+        "Uses a configurable pipeline to adapt to domain-specific intent taxonomies."
       ]
     },
     {
       "title": "Business Problem",
       "points": [
-        "Process diagrams are often trapped in PDFs and hard to convert into machine-usable workflow structures.",
-        "Manual interpretation is slow, inconsistent, and sensitive to analyst assumptions.",
-        "Decision branches, edge labels, and loopbacks are frequently missed during hand extraction.",
-        "Static tooling struggles with mixed shapes, swimlanes, and image quality variation.",
-        "Teams need reliable conversion to journey-ready JSON for analysis and orchestration experiments.",
-        "Research required balancing classical libraries with AI-driven extraction quality."
+        "Operational workflow knowledge is buried in large volumes of unstructured call transcripts.",
+        "Manual analysis is expensive, inconsistent, and difficult to scale across intents.",
+        "Different agents describe similar actions using varied language and sequence patterns.",
+        "Without normalization, organizations cannot reliably identify repeatable process paths.",
+        "Process optimization efforts lack evidence from end-to-end customer interaction data.",
+        "Automation opportunities remain hidden without structured workflow discovery outputs."
       ]
     },
     {
       "title": "Solution Overview",
       "points": [
-        "Implements a three-stage pipeline optimized for workflow understanding and cost control.",
-        "Stage 1 performs vision-based node and arrow extraction with strict anti-hallucination constraints.",
-        "Stage 2 translates extracted structure into executable Mermaid flowchart syntax.",
-        "Stage 3 derives business workflow name and description from Stage 1 output.",
-        "Parser converts Mermaid nodes and connections into orchestrator-compatible JSON objects.",
-        "Validation filters non-workflow pages before expensive model execution."
+        "Pipeline extracts workflow tasks from transcripts using intent-aware LLM prompts.",
+        "Task normalization clusters semantically similar actions into representative labels.",
+        "Sequence clustering groups complete workflow paths into common operational patterns.",
+        "Configuration-driven parameters control sampling, thresholds, and output destinations.",
+        "Outputs include Excel, JSON, and serialized artifacts for downstream analytics.",
+        "Design emphasizes privacy-aware extraction and deterministic processing controls."
       ]
     },
     {
       "title": "Detailed Step-Wise Execution Flow",
       "points": [
-        "Step 1: Load input PDF and rasterize pages into high-resolution workflow images.",
-        "Step 2: Validate candidate pages using edge density and directional pattern heuristics.",
-        "Step 3: Enhance accepted images for readability while preserving structural fidelity.",
-        "Step 4: Run vision model to extract node types, arrows, labels, and backward links.",
-        "Step 5: Convert structured text into Mermaid with explicit connection rules.",
-        "Step 6: Parse Mermaid into tasks, decisions, branches, and final workflow JSON files."
+        "Load intents and ranked interactions from structured metadata sources.",
+        "Sample transcripts by intent class to build representative processing batches.",
+        "Parse ASR rows into speaker-aware transcript narratives for model input.",
+        "Invoke LLM to infer workflow name, ordered tasks, and supporting analysis.",
+        "Generate embeddings for tasks and cluster them into normalized action groups.",
+        "Cluster normalized sequences and publish representative workflows with frequency counts."
       ]
     },
     {
       "title": "Core Capabilities & Architecture",
       "points": [
-        "Supports extraction of workflow images from PDFs as reusable preprocessing capability.",
-        "Evaluates AI-driven inference quality using measurable outputs and scenario comparison.",
-        "Creates benchmarkable datasets and token-cost traces for objective experimentation.",
-        "Captures edge labels and decision branches for richer control-flow semantics.",
-        "Maintains modular architecture: conversion, extraction, parsing, cost analysis, and orchestration.",
-        "Produces standardized JSON artifacts suitable for customer journey interpretation workflows."
+        "Intent-guided extraction aligns detected workflows with business taxonomy context.",
+        "Semantic embedding and hierarchical clustering improve cross-phrase task consistency.",
+        "Representative task and workflow selection uses centroid-based nearest neighbor logic.",
+        "DBCV quality scoring supports evaluation of clustering density and separation.",
+        "Config manager centralizes paths, thresholds, model settings, and runtime parameters.",
+        "Model invocation layer standardizes Bedrock access, retries, and usage telemetry."
       ]
     },
     {
       "title": "Advantages",
       "points": [
-        "Reduces manual effort and accelerates workflow understanding from legacy process diagrams.",
-        "Improves extraction consistency through staged prompts and parser-backed transformation.",
-        "Balances quality and cost via hybrid model strategy across pipeline stages.",
-        "Preserves decision semantics using branch-aware JSON conversion logic.",
-        "Enables rapid experimentation across multiple diagrams with repeatable output structure.",
-        "Provides clear observability with token accounting and stage-level diagnostics."
+        "Reduces manual effort to discover workflows across large transcript corpora.",
+        "Creates standardized process language from heterogeneous agent conversation styles.",
+        "Improves visibility into frequent customer journey paths and operational bottlenecks.",
+        "Enables data-backed prioritization for automation and orchestration initiatives.",
+        "Supports repeatable experimentation through configurable thresholds and prompts.",
+        "Produces reusable structured outputs for analytics, governance, and reporting."
       ]
     },
     {
       "title": "Limitations",
       "points": [
-        "Performance depends on diagram clarity, scan quality, and complex layout density.",
-        "Node and arrow detection can degrade on heavily stylized or ambiguous diagrams.",
-        "Mermaid parsing assumes coherent model output and may skip uncertain connections.",
-        "Prompt-driven extraction may require tuning for domain-specific notation patterns.",
-        "Current implementation focuses on proof-of-concept reliability over production hardening.",
-        "Legacy scripts indicate competing approaches still under consolidation."
+        "Extraction quality depends on transcript accuracy and intent metadata completeness.",
+        "LLM responses can vary when conversations are ambiguous or context is incomplete.",
+        "Clustering outcomes are sensitive to distance thresholds and embedding model choice.",
+        "Very large datasets may require batching to manage memory and runtime constraints.",
+        "Some nuanced tasks may be over-merged when semantic similarity is high.",
+        "Current implementation focuses on offline analysis rather than real-time streaming."
       ]
     },
     {
       "title": "Risks & Implementation Considerations",
       "points": [
-        "Model output variability may introduce structural drift between runs on edge-case diagrams.",
-        "Cloud dependency requires stable Bedrock access, credentials, and regional configuration.",
-        "Cost can rise with large document sets without strict page filtering and batching.",
-        "Missing or unclear arrow labels can weaken downstream branch interpretation quality.",
-        "Governance needed to validate inferred workflows before operational deployment.",
-        "Fallback strategies should cover parser failures and ambiguous topology detection."
+        "Cloud model availability and Bedrock rate limits influence throughput predictability.",
+        "Governance is required to monitor token cost and processing efficiency at scale.",
+        "Privacy controls must ensure sensitive details never leak into extracted outputs.",
+        "Quality thresholds should be validated per intent domain before operational rollout.",
+        "Fallback handling is needed for malformed model outputs or empty clusters.",
+        "Versioning of prompts and configs is essential for reproducible discovery results."
       ]
     },
     {
       "title": "Roadmap & Next Steps",
       "points": [
-        "Harden extraction with broader test corpus and automated quality scoring.",
-        "Expand benchmark dataset to include varied industries and notation styles.",
-        "Refine non-AI and AI hybrid options for maintainability and runtime cost.",
-        "Package pipeline into reusable service interface for orchestration consumers.",
-        "Add human-in-the-loop review for low-confidence workflow segments.",
-        "Publish recommendation framework for scaling from POC to production."
+        "Add interactive controls for threshold tuning and cluster quality exploration.",
+        "Integrate workflow title generation and richer taxonomy-aware labeling.",
+        "Expand evaluation framework with precision and recall benchmarks by intent.",
+        "Introduce human-in-the-loop review for low-confidence workflow inferences.",
+        "Enable incremental and near real-time processing for operational monitoring.",
+        "Package outputs for direct ingestion by orchestration and process mining platforms."
       ]
     }
   ]

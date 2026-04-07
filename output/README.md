@@ -1,533 +1,547 @@
-# Workflow Inference from PDF Diagrams
+# Workflow Discovery and Clustering Pipeline
 
-## 📋 Overview
+## Overview
 
-This POC automatically extracts business process workflows from PDF documents containing workflow diagrams and converts them into structured JSON format. 
+This project is an **AI-powered workflow discovery system** designed to analyze contact center call transcripts and automatically identify, normalize, and cluster business workflows and task sequences. It uses Large Language Models (LLMs) and machine learning clustering techniques to extract meaningful operational patterns from customer service interactions.
 
-The system uses a sophisticated 3-stage LLM-based pipeline powered by AWS Bedrock (Claude models) to extract workflow nodes, connections, decision branches, and edge labels with high accuracy.
-
-**Key Features:**
-- ✅ Extracts workflow diagrams from PDFs
-- ✅ Two level mermaid code extraction for workflow JSON creation
-- ✅ Generates structured JSON with decision nodes and branches
-- ✅ Captures edge labels for connections (e.g., "Approved", "Rejected")
-- ✅ Supports decision nodes with context-aware branch names
-- ✅ Extracts workflow names and descriptions using LLM
-- ✅ Token counting and cost analysis for different Claude models
+### Primary Use Case
+Analyzing contact center conversations to:
+- Discover underlying business workflows
+- Identify common task sequences
+- Group similar workflows together
+- Provide insights for process optimization and automation
 
 ---
 
-## 🏗️ Process Architecture
+## Key Features
 
-### High-Level Process Flow
+1. **Workflow Extraction from Transcripts**: Uses LLMs (Claude 3.5 Sonnet via AWS Bedrock) to analyze call transcripts and extract structured workflows with task sequences
+2. **Task Normalization**: Clusters similar task descriptions using semantic embeddings and hierarchical clustering
+3. **Workflow Sequence Clustering**: Groups complete workflow sequences to identify common operational patterns
+4. **Configurable Pipeline**: YAML-based configuration for easy customization
+5. **Privacy-Aware**: Designed to exclude sensitive personal information from extracted workflows
+
+---
+
+## Project Structure
 
 ```
-PDF Document
-
-    ↓
-[PAGE EXTRACTION]
-    ├─ Extract all pages as high-resolution images (300 DPI)
-    ├─ Text-based pre-filtering (workflow keyword detection)
-    └─ Validate page structure (edge density, connectivity)
-
-    ↓
-[VALID WORKFLOW PAGES]
-
-    ↓
-[THREE-STAGE LLM PIPELINE]
-    ├─ STAGE 1: Vision-based arrow/node extraction (Claude Opus)
-    ├─ STAGE 2: Mermaid code generation (Claude Sonnet)
-    └─ STAGE 3: Name & description extraction (Claude Sonnet)
-
-    ↓
-[MERMAID CODE PARSING]
-    ├─ Extract nodes with types (Rectangle, Diamond, Circle, Oval)
-    ├─ Parse connections and edge labels
-    └─ Identify decision nodes
-
-    ↓
-[JSON GENERATION]
-    ├─ Create task objects with UUIDs
-    ├─ Build decision node structures with branches
-    ├─ Link connections with labels as descriptions
-    └─ Handle backward arrows and loops
-
-    ↓
-[OUTPUT JSON]
-    ├─ Workflow metadata (name, description)
-    ├─ Tasks with types and descriptions
-    ├─ Decision nodes with branch configurations
-    └─ Connections with labels and descriptions
+discovery/
+├── entry_point.py                      # Main entry point - orchestrates the pipeline
+├── config_manager.py                   # Configuration management (YAML loader)
+├── extract_from_asr.py                 # Workflow extraction from ASR transcripts
+├── normalize_task.py                   # Task normalization and clustering
+├── cluster_task_sequences.py           # Workflow sequence clustering
+├── discovery_utils.py                  # Utility functions for clustering and embeddings
+├── invoke_models.py                    # AWS Bedrock model invocation wrapper
+├── prompts.py                          # LLM prompt templates
+├── create_workflow_type_title.py       # Workflow title generation (WIP)
+└── resources/
+    ├── config.yaml                     # Configuration file
+    └── Output/                         # Generated results directory
 ```
 
 ---
 
-## 🔄 Three-Stage LLM Pipeline
+## Architecture & Pipeline Flow
 
-### **STAGE 1: Arrow & Node Extraction (Vision Analysis)**
+### High-Level Pipeline
 
-**Purpose:** Extract all nodes and arrows from the PDF image as natural language descriptions
-
-**Model:** AWS Bedrock Claude Opus 4.5 (Vision-enabled)
-- **Model ID:** `claude-opus-4-5-20251101-v1:0`
-- **Cost:** $15/$75 per million tokens (input/output)
-
-**What it does:**
-1. Analyzes the workflow diagram image
-2. Identifies all connected nodes (shapes with arrows)
-3. Classifies node types: RECTANGLE, DIAMOND, CIRCLE, OVAL, PARALLELOGRAM
-4. Extracts all arrows with directions (up, down, left, right, diagonal)
-5. Captures edge labels (text on arrows)
-6. Detects backward arrows (loops and error handling paths)
-7. Filters out swimlanes and non-workflow elements
-
-**Output:** Natural language description of nodes and arrows
 ```
-NODE_1: CIRCLE "Start"
-NODE_2: RECTANGLE "Submit Request"
-NODE_3: DIAMOND "Approved?"
-NODE_4: CIRCLE "End"
+┌─────────────────────────────────────────────────────────────────────┐
+│                     WORKFLOW DISCOVERY PIPELINE                      │
+└─────────────────────────────────────────────────────────────────────┘
 
-ARROW_1: FROM "Start" TO "Submit Request" DIRECTION: down LABEL: NONE
-ARROW_2: FROM "Submit Request" TO "Approved?" DIRECTION: right LABEL: NONE
-ARROW_3: FROM "Approved?" TO "End" DIRECTION: right LABEL: Yes
+  ┌────────────────────┐
+  │   Input Data       │
+  │  • ASR Transcripts │
+  │  • Intent Metadata │
+  └─────────┬──────────┘
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │  PHASE 1: WORKFLOW EXTRACTION (extract_from_asr.py)         │
+  ├─────────────────────────────────────────────────────────────┤
+  │  • Load interaction data with intent classifications        │
+  │  • Sample transcripts (stratified by intent)                │
+  │  • Parse ASR files → Generate transcript strings            │
+  │  • Invoke LLM to extract:                                   │
+  │    - Workflow name                                          │
+  │    - Task sequence                                          │
+  │    - Analysis                                               │
+  │  • Output: df_summary (DataFrame with workflows & tasks)    │
+  └─────────────────────┬───────────────────────────────────────┘
+                        │
+                        ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │  PHASE 2: TASK NORMALIZATION (normalize_task.py)            │
+  ├─────────────────────────────────────────────────────────────┤
+  │  • Flatten all task descriptions                            │
+  │  • Filter out verification/review tasks                     │
+  │  • Generate embeddings (Sentence Transformers)              │
+  │  • Hierarchical clustering (Agglomerative)                  │
+  │  • Find representative task for each cluster                │
+  │  • Create task lookup mapping                               │
+  │  • Output: reverse_clusters (task → cluster mapping)        │
+  └─────────────────────┬───────────────────────────────────────┘
+                        │
+                        ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │  PHASE 3: WORKFLOW SEQUENCE CLUSTERING                      │
+  │             (cluster_task_sequences.py)                     │
+  ├─────────────────────────────────────────────────────────────┤
+  │  • Map tasks to normalized cluster names                    │
+  │  • Create sequence strings (e.g., "Task A, Task B, Task C") │
+  │  • Filter invalid workflows                                 │
+  │  • Generate embeddings for sequences                        │
+  │  • Hierarchical clustering on sequences                     │
+  │  • Find representative workflow for each cluster            │
+  │  • Output: JSON with workflow clusters                      │
+  └─────────────────────┬───────────────────────────────────────┘
+                        │
+                        ▼
+  ┌────────────────────────────────────┐
+  │   Output Artifacts                 │
+  ├────────────────────────────────────┤
+  │  • Excel: Raw workflow detections  │
+  │  • JSON: Task clusters             │
+  │  • JSON: Workflow sequence clusters│
+  │  • Pickle: Intermediate data       │
+  └────────────────────────────────────┘
 ```
-
-**Key Features:**
-- Mandatory backward arrow detection (loops, retries, error paths)
-- Zero-tolerance for label inference (only captures visible text)
-- Swimlane filtering (ignores visual grouping containers)
-- Connected nodes only (ignores standalone annotations)
 
 ---
 
-### **STAGE 2: Mermaid Code Generation (Text Processing)**
+## Detailed Component Description
 
-**Purpose:** Convert Stage 1 natural language descriptions into executable Mermaid flowchart syntax
+### 1. Configuration Management (`config_manager.py`)
 
-**Model:** AWS Bedrock Claude Sonnet 4.5 (Text-only)
-- **Model ID:** `claude-sonnet-4-5-20250929-v1:0`
-- **Cost:** $3/$15 per million tokens (input/output)
+**Purpose**: Centralized configuration management using YAML
 
-**What it does:**
-1. Receives Stage 1 text output
-2. Validates node types and counts
-3. Generates Mermaid flowchart syntax:
-   - Rectangles: `A[text]`
-   - Diamonds: `B{text}`
-   - Circles: `C((text))`
-   - Ovals: `D[/text\]`
-   - Parallelograms: `E[\\text\\]`
-4. Creates connections with labels: `A -->|label| B`
-5. Preserves arrow directions and labels
-6. No inference of missing labels (strict no-inference rule)
+**Key Components**:
+- `ConfigurationManager`: Singleton class that loads and provides access to configuration
+- Properties for paths (ASR directory, output directory, embedder model)
+- Data parameters (distance thresholds, top-n values)
 
-**Output:** Valid Mermaid flowchart code
-```mermaid
-flowchart TD
-    A((Start))
-    B[Submit Request]
-    C{Approved?}
-    D((End))
-    
-    A --> B
-    B --> C
-    C -->|Yes| D
+**Configuration Example**:
+```yaml
+paths:
+  asr_dir_path: "/path/to/asr/files"
+  output_dir_path: "/path/to/output"
+  input_intents_file: "/path/to/intents.csv"
+  embedder_path: "/path/to/embedding/model"
 ```
-
-**Key Features:**
-- No hallucination of missing labels
-- Strict adherence to Stage 1 output
-- Direct 1:1 mapping of nodes and arrows
-- Cost-optimized (Sonnet instead of Opus)
 
 ---
 
-### **STAGE 3: Workflow Name & Description Extraction**
+### 2. Workflow Extraction (`extract_from_asr.py`)
 
-**Purpose:** Extract meaningful workflow name and description from the diagram
+**Purpose**: Extract structured workflows from raw call transcripts using LLMs
 
-**Model:** AWS Bedrock Claude Sonnet 4.5 (Text-only)
-- **Model ID:** `claude-sonnet-4-5-20250929-v1:0`
-- **Cost:** $3/$15 per million tokens (input/output)
+**Algorithm**:
+1. **Load Intent Data**: Reads CSV with interaction IDs and intent classifications (level1, level2, level3)
+2. **Sample Selection**: 
+   - Groups by level3 intent
+   - Takes highest rank interaction per ID
+   - Random samples 20 (configurable) per intent group
+3. **Transcript Parsing**:
+   - Reads ASR CSV files (tab-separated)
+   - Combines phrases by speaker channel (Agent/Customer)
+   - Generates conversation transcript
+4. **LLM Workflow Extraction**:
+   - Uses Claude 3.5 Sonnet via AWS Bedrock
+   - Prompt includes transcript + intent metadata
+   - Extracts JSON with:
+     - `workflow`: 2-3 word workflow name
+     - `tasks`: Ordered list of task descriptions (3-4 words each)
+     - `analysis`: Detailed explanation
+5. **Output**: Excel file + DataFrame with all extracted workflows
 
-**What it does:**
-1. Reuses Stage 1 text output (no new image processing)
-2. Analyzes nodes and flow to understand workflow purpose
-3. Generates descriptive workflow name
-4. Creates comprehensive workflow description
-5. Extracts key process steps and decision points
+**Key Constraints** (from prompt):
+- Only actual performed actions (not explanations)
+- No verification/confirmation tasks
+- Privacy-aware: No sensitive information in output
+- Rejects inquiry-only workflows
 
-**Output:** Workflow metadata
+---
+
+### 3. Task Normalization (`normalize_task.py`)
+
+**Purpose**: Group similar task descriptions into semantic clusters
+
+**Algorithm**:
+1. **Task Collection**:
+   - Flatten all task arrays from workflows
+   - Filter out invalid/unknown tasks
+   - Remove verification/review tasks (prefixes: verify, locate, review)
+
+2. **Embedding Generation**:
+   - Use Sentence Transformer model (bge-base-en-v1.5)
+   - Convert tasks to normalized embeddings
+
+3. **Hierarchical Clustering**:
+   - Algorithm: Agglomerative Clustering
+   - Linkage: Complete
+   - Metric: Cosine similarity
+   - Distance threshold: 0.2 (configurable)
+
+4. **Cluster Naming**:
+   - For each cluster, find centroid in embedding space
+   - Select task closest to centroid as representative
+
+5. **Quality Scoring**:
+   - Use DBCV (Density-Based Cluster Validation) metric
+   - Scores cluster quality based on density and separation
+
+6. **Output**: 
+   - JSON with cluster mappings: `{cluster_name: [task1, task2, ...]}`
+   - Reverse mapping: `{task: cluster_name}`
+
+---
+
+### 4. Workflow Sequence Clustering (`cluster_task_sequences.py`)
+
+**Purpose**: Group complete workflow sequences to find common operational patterns
+
+**Algorithm**:
+1. **Task Sequence Normalization**:
+   - Replace individual tasks with their normalized cluster names
+   - Create sequence strings: "Normalized Task A, Normalized Task B, ..."
+
+2. **Filtering**:
+   - Remove workflows with "No identifiable workflow"
+   - Remove empty or Unknown-only sequences
+
+3. **Embedding & Clustering**:
+   - Encode sequences using Sentence Transformer
+   - Agglomerative clustering with cosine similarity
+   - Distance threshold: 0.15 (configurable)
+
+4. **Representative Selection**:
+   - Find centroid of each workflow cluster
+   - Select sequence closest to centroid as representative
+
+5. **Output**:
+   - JSON with workflow clusters and frequency counts
+   - Format: `{representative_workflow: {workflow1: count1, workflow2: count2, ...}}`
+
+---
+
+### 5. Utility Functions (`discovery_utils.py`)
+
+**Key Functions**:
+
+| Function | Purpose |
+|----------|---------|
+| `filter_tasks()` | Remove verification/review tasks |
+| `cluster_and_score()` | Perform hierarchical clustering + DBCV scoring |
+| `find_cluster_name()` | Find representative element for each cluster |
+| `create_cluster_mappings()` | Create bidirectional cluster mappings |
+| `pickle_data()` / `unpickle_data()` | Serialize intermediate results |
+| `cosine_distance_matrix()` | Compute pairwise cosine distances |
+
+---
+
+### 6. LLM Invocation (`invoke_models.py`)
+
+**Purpose**: Wrapper for AWS Bedrock model invocation
+
+**Supported Models**:
+- Claude 3.5 Sonnet (us.anthropic.claude-3-5-sonnet-20241022-v2:0)
+- Claude 3 Haiku
+- Claude Sonnet 3.7 & 4
+- Amazon Nova Lite & Micro
+
+**Features**:
+- Handles authentication via boto3
+- Temperature: 0.0 (deterministic)
+- Error handling (throttling, access denied, validation)
+- Latency tracking
+- Token usage monitoring
+
+---
+
+## Algorithm Details
+
+### Hierarchical Clustering Strategy
+
+**Why Agglomerative Clustering?**
+- **Advantage**: No need to predefine number of clusters
+- **Distance Threshold**: Controls granularity automatically
+- **Linkage Method**: Complete linkage ensures compact clusters
+- **Metric**: Cosine similarity captures semantic meaning
+
+**Tuning Parameters**:
+| Parameter | Task Normalization | Workflow Clustering |
+|-----------|-------------------|---------------------|
+| Distance Threshold | 0.2 | 0.15 |
+| Linkage | Complete | Complete |
+| Metric | Cosine | Cosine |
+
+### Embedding Model
+
+**Model**: `bge-base-en-v1.5` (BGE - BAAI General Embedding)
+- **Dimensions**: 768
+- **Normalization**: L2 normalized embeddings
+- **Advantages**: 
+  - Strong semantic understanding
+  - Optimized for sentence-level embeddings
+  - Good performance on similarity tasks
+
+### Quality Metrics
+
+**DBCV (Density-Based Cluster Validation)**:
+- Measures both cluster density and separation
+- Range: [-1, 1], higher is better
+- Score < 0 indicates poor clustering
+- Used to evaluate clustering quality automatically
+
+---
+
+## Prompt Engineering
+
+The system uses carefully designed prompts (in `prompts.py`) for workflow extraction:
+
+**Key Prompt Components**:
+1. **Context**: Domain explanation (contact center, travel technology)
+2. **Constraints**:
+   - Execution Rule: Only performed actions
+   - Task Relevance: No verification/confirmation tasks
+   - Privacy: Exclude all sensitive information
+3. **Output Format**: Strict JSON schema
+4. **Examples**: Few-shot learning with good/bad examples
+
+**Prompt Versions**:
+- `WorkflowDetectionIntent`: Main prompt with intent metadata
+- `WorkflowDetectionNoAnalysis`: Lightweight version without analysis
+- `WorkflowDetectionMultiTranscripts`: Batch processing variant
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+```bash
+# Python 3.8+
+pip install pandas
+pip install scikit-learn
+pip install sentence-transformers
+pip install torch
+pip install boto3
+pip install pyyaml
+pip install tqdm
+pip install kDBCV
+```
+
+### AWS Configuration
+Ensure AWS credentials are configured:
+```bash
+aws configure
+# Provide your AWS Access Key ID, Secret Access Key, and region
+```
+
+### Configuration
+Edit `resources/config.yaml`:
+```yaml
+paths:
+  asr_dir_path: "/path/to/your/asr/files"
+  output_dir_path: "/path/to/output"
+  input_intents_file: "/path/to/intents.csv"
+  embedder_path: "/path/to/embedding/model"
+```
+
+---
+
+## Usage
+
+### Running the Full Pipeline
+
+```bash
+python entry_point.py
+```
+
+**Pipeline Execution**:
+1. Generates workflows from ASR transcripts
+2. Pickles intermediate results
+3. Loads data and embedding model
+4. Normalizes tasks into clusters
+5. Clusters workflow sequences
+6. Saves all results to output directory
+
+### Output Files
+
+| File | Description |
+|------|-------------|
+| `Refactored_Orcherstrator_WorkflowDetector_results.xlsx` | Raw workflow extractions with tasks |
+| `orcherstrator_norm_clusters_0.2.json` | Task normalization clusters |
+| `orcherstrator_task_seq_clusters_0.15.json` | Workflow sequence clusters |
+| `pickle_wf_discover.dat` | Intermediate data for resumption |
+
+---
+
+## Data Flow Example
+
+### Input
+```csv
+interaction_id,rank,level1,level2,level3,distance
+12345,5,Service,Modification,Name Change,0.23
+```
+
+### Phase 1 Output (Workflow Extraction)
 ```json
 {
-  "workflow_name": "Travel Request Management",
-  "workflow_description": "This workflow manages business travel requests from submission through approval, advance payments, booking, and expense reconciliation..."
+  "workflow": "Name Correction",
+  "tasks": [
+    "Customer requested name correction",
+    "Verify customer identity",
+    "Update name in system",
+    "Send confirmation email"
+  ],
+  "analysis": "..."
 }
 ```
 
-**Key Features:**
-- Cost-optimized: reuses Stage 1 output (no image re-processing)
-- 80% token savings vs reprocessing image
-- Generates business-friendly names and descriptions
-- Understands workflow context from extracted nodes
-
----
-
-## 📁 File Structure & Descriptions
-
-### Core Processing Files
-
-#### **1. `create_workflow.py` (Main Orchestrator)**
-- **Purpose:** Main entry point - orchestrates the entire workflow extraction pipeline
-- **Key Functions:**
-  - `extract_pages_as_images()`: Extracts PDF pages as high-resolution images
-  - `enhance_workflow_image()`: Improves image quality for LLM processing
-  - `is_valid_workflow_page()`: Validates if page contains a workflow
-  - `extract_mermaid_two_stage()`: Runs Stage 1 & Stage 2
-  - `extract_workflow_name_from_stage1()`: Runs Stage 3
-  - `convert_items_to_workflow_json_with_decisions()`: Builds final JSON
-- **Output:** JSON files in `workflow_json/` directory (one per workflow)
-- **Input:** PDF file path in `pdf_images/` directory
-
-**Usage:**
-```python
-# Edit pdf_name variable at top of file
-pdf_name = "your_workflow.pdf"
-python create_workflow.py
-```
-
----
-
-#### **2. `two_stage_mermaid_extraction.py` (Stage 1 & 2 LLM Calls)**
-- **Purpose:** Manages Stage 1 (arrow extraction) and Stage 2 (Mermaid generation) LLM calls
-- **Key Functions:**
-  - `stage1_extract_arrows()`: AWS Bedrock call for vision-based arrow extraction
-  - `stage2_generate_mermaid()`: AWS Bedrock call for Mermaid code generation
-  - `extract_mermaid_two_stage()`: Orchestrates both stages
-  - `is_valid_workflow_page()`: Validates workflow pages
-- **Models Used:**
-  - Stage 1: Claude Opus 4.5 (Vision)
-  - Stage 2: Claude Sonnet 4.5 (Text)
-
----
-
-#### **3. `create_mermaid_from_image.py` (Parsing & JSON Generation)**
-- **Purpose:** Parses Mermaid code and converts to JSON workflow format
-- **Key Functions:**
-  - `extract_workflow_from_mermaid_and_image()`: Parses Mermaid code
-  - `parse_mermaid_connections()`: Extracts connections with labels
-  - `convert_items_to_workflow_json_with_decisions()`: Builds JSON with decision nodes
-  - `extract_workflow_name_from_stage1()`: Extracts name/description via Stage 3 LLM
-- **Processing Steps:**
-  1. Parses node definitions from Mermaid
-  2. Extracts all connection patterns
-  3. Identifies decision nodes and branches
-  4. Maps node letters to unique IDs
-  5. Builds task objects with types
-  6. Creates decision node structures with branch IDs
-  7. Generates final JSON with connections and labels
-
-**Decision Node Handling:**
-- Identifies decision nodes (DIAMOND type `{}`)
-- Extracts branch labels from arrow labels
-- Creates branch configurations with conditional expressions
-- Handles unnamed decision nodes with default "Decision" name
-- Preserves custom branch names (Approved/Rejected, Accept/Decline, etc.)
-
-**Edge Label Preservation:**
-- Captures all visible labels from arrows
-- Adds both `label` and `description` fields to connections
-- Supports custom labels beyond Yes/No
-- Examples: "Advance Payment Required", "Employee return date", "Modify"
-
----
-
-#### **4. `handle_process_doc_pdf_with_image.py` (Image Processing)**
-- **Purpose:** Utility functions for image encoding and processing
-- **Key Functions:**
-  - `image_base64_encoder()`: Converts image to base64 for AWS Bedrock
-  - Handles image format detection (PNG, JPEG, WebP, GIF)
-- **Output:** Base64 encoded image strings for LLM processing
-
----
-
-#### **5. `pdf_image_conversion.py` (PDF to Image Conversion)**
-- **Purpose:** Converts PDF pages to high-resolution images
-- **Key Functions:**
-  - `extract_pages_as_images()`: Extracts all pages as PNG images at specified DPI
-  - `enhance_workflow_image()`: Applies image enhancements for better LLM processing
-    - Increases contrast
-    - Adjusts brightness
-    - Applies sharpening
-- **DPI:** 300 DPI (high resolution for workflow diagram clarity)
-- **Output:** PNG images in `extracted_images/` directory
-
----
-
-### Utility & Analysis Files
-
-#### **6. `count_tokens_for_pdf.py` (Cost Analysis)**
-- **Purpose:** Calculates token usage and costs for different Claude models
-- **Supported Modes:**
-  - `sonnet`: Pure Claude Sonnet 4.5
-  - `opus`: Pure Claude Opus 4.5
-  - `hybrid`: Opus Stage 1 + Sonnet Stage 2-3 (43% cost savings)
-- **Outputs:**
-  - Input/output token counts
-  - Cost breakdown per stage
-  - Total cost comparison
-  - Cost savings analysis
-
-**Usage:**
-```python
-python count_tokens_for_pdf.py
-# Shows token counts and costs for one PDF across all three scenarios
-```
-
-**Pricing (per million tokens):**
-- Sonnet: $3 (input), $15 (output)
-- Opus: $15 (input), $75 (output)
-- Hybrid (recommended): 30-40% savings vs Opus
----
-
-### Configuration & Data Files
-
-#### **Input Directory: `pdf_images/`**
-- Contains PDF files to process
-- Example: `travel_request.pdf`, `heart_disease_flow.pdf`
-
-#### **Output Directory: `workflow_json/`**
-- Contains extracted workflow JSON files
-- Naming convention: `{pdf_name}_page{N}_workflow.json` (for multi-page PDFs)
-- Example: `travel_request_page1_workflow.json`
-
-#### **Intermediate Directory: `extracted_images/`**
-- Temporary storage for extracted PDF page images
-- High-resolution PNG files for LLM processing
----
-
-## 📊 JSON Output Structure
-
-### Example Workflow JSON
-
+### Phase 2 Output (Task Normalization)
 ```json
 {
-  "id": "47510a2c-e5a9-4a86-a7d1-5d93e78f9889",
-  "name": "Business Travel Request Management",
-  "description": "This workflow manages the complete business travel process...",
-  "busNo": 0,
-  "version": "0.1.0",
-  "tasks": {
-    "6baf77a7-8861-4f66-b034-5bd14fa97fbb": {
-      "id": "6baf77a7-8861-4f66-b034-5bd14fa97fbb",
-      "data": {
-        "type": "Start",
-        "name": "Start",
-        "description": ""
-      },
-      "startNode": true,
-      "endNode": false
-    },
-    "bdcd4290-b401-48be-bb7d-117f2d5696a3": {
-      "id": "bdcd4290-b401-48be-bb7d-117f2d5696a3",
-      "data": {
-        "type": "Decision",
-        "name": "Approved?",
-        "description": "",
-        "inputs": [
-          {
-            "name": "conditions",
-            "value": "[{\"Expressions\": [{...}], \"Branch\": {\"BranchId\": \"945f5931-...\", \"BranchName\": \"Approved\"}}]"
-          },
-          {
-            "name": "defaultBranch",
-            "value": "{\"BranchId\": \"867993fa-...\", \"BranchName\": \"Rejected\"}"
-          }
-        ]
-      },
-      "startNode": false,
-      "endNode": false
-    }
-  },
-  "connections": [
-    {
-      "source": {
-        "taskId": "6baf77a7-8861-4f66-b034-5bd14fa97fbb",
-        "branchType": "output",
-        "branchId": "6baf77a7-8861-4f66-b034-5bd14fa97fbb-output"
-      },
-      "target": {
-        "taskId": "6b72dfd4-3666-4263-849a-2f2980d070e1",
-        "branchType": "input",
-        "branchId": "6b72dfd4-3666-4263-849a-2f2980d070e1-input"
-      },
-      "label": "Advance Payment Required",
-      "description": "Advance Payment Required"
-    }
+  "Update customer information": [
+    "Update name in system",
+    "Update customer details",
+    "Modify customer record"
   ]
 }
 ```
 
-### JSON Components
-
-- **Workflow Metadata:**
-  - `id`: Unique identifier (UUID)
-  - `name`: Workflow name (extracted via Stage 3)
-  - `description`: Workflow description (extracted via Stage 3)
-  - `version`: Version tracking
-
-- **Tasks (Nodes):**
-  - `type`: Node type (Start, End, General, Decision)
-  - `name`: Node label/text
-  - `description`: Node details
-  - `startNode`/`endNode`: Flow markers
-  - For Decision nodes: `inputs` with branch configurations
-
-- **Connections:**
-  - `source`: Starting node/branch reference
-  - `target`: Ending node/branch reference
-  - `label`: Edge label (optional, if visible on arrow)
-  - `description`: Same as label (for consistency)
-
-- **Decision Branches:**
-  - Conditional expressions with branch IDs
-  - Default branch for no-match cases
-  - Smart branch naming (Approved/Rejected, Yes/No, Accept/Decline)
-
----
-
-## 🚀 How to Run
-
-### Prerequisites
-
-1. **Python Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-   **Key Libraries:**
-   - `boto3`: AWS Bedrock integration
-   - `PyMuPDF (fitz)`: PDF processing
-   - `Pillow`: Image processing
-   - `opencv-python`: Image enhancement
-   - `numpy`: Array processing
-
-2. **PDF Files:**
-   - Place workflow PDFs in `pdf_images/` directory
-   - Example: `pdf_images/travel_request.pdf`
-
-### Step-by-Step Execution
-
-1. **Place PDF in input directory:**
-   ```bash
-   cp your_workflow.pdf pdf_images/
-   ```
-
-2. **Update PDF name in `create_workflow.py`:**
-   ```python
-   pdf_name = "your_workflow.pdf"
-   ```
-
-3. **Run the extraction pipeline:**
-   ```bash
-   python create_workflow.py
-   ```
-
-4. **Check output:**
-   ```bash
-   ls workflow_json/
-   # Expected output: your_workflow_page1_workflow.json, etc.
-   ```
-
-### Example: Travel Request Workflow
-
-```bash
-# 1. Input file already present
-ls pdf_images/travel_request.pdf
-
-# 2. Run extraction
-python create_workflow.py
-
-# 3. Output generated
-ls workflow_json/
-# travel_request_workflow.json  (1 page → 1 workflow)
+### Phase 3 Output (Workflow Clustering)
+```json
+{
+  "Customer requested name correction, Update customer information, Send confirmation": {
+    "Customer requested name correction, Update name in system, Send confirmation email": 15,
+    "Customer requested profile update, Update customer information, Send notification": 8
+  }
+}
 ```
 
-## 📈 Cost Optimization Strategies
+---
 
-### Three Processing Scenarios
+## Customization
 
-1. **Pure Sonnet (Economical)**
-   - All stages: Claude Sonnet 4.5
-   - Cost: ~$0.02-0.05 per PDF
-   - Trade-off: Lower accuracy for Stage 1
+### Adjusting Clustering Thresholds
+In `normalize_task.py`:
+```python
+distance_threshold = 0.2  # Lower = more clusters, Higher = fewer clusters
+```
 
-2. **Pure Opus (High Quality)**
-   - All stages: Claude Opus 4.5
-   - Cost: ~$0.10-0.20 per PDF
-   - Benefit: Best extraction accuracy
+In `cluster_task_sequences.py`:
+```python
+distance_thresholds = [0.15]  # Can test multiple values
+```
 
-3. **Hybrid (Recommended) - 30-40% Savings**
-   - Stage 1: Claude Opus 4.5 (vision accuracy)
-   - Stage 2-3: Claude Sonnet 4.5 (text optimization)
-   - Cost: ~$0.08-0.15 per PDF (approx 30-40% savings vs Pure Opus)
-   - Benefit: Optimal accuracy + cost efficiency
+### Filtering Task Types
+In `discovery_utils.py`:
+```python
+def filter_tasks(task_list):
+    prefixes = ['verify', 'locate', 'review', 'Verify', 'Locate', 'Review']
+    # Add more prefixes to filter
+    return [task for task in task_list if not any(task.startswith(prefix) for prefix in prefixes)]
+```
 
-**Stage 3 Optimization:**
-- Reuses Stage 1 text output (no new image processing)
-- Avoids redundant vision API calls
-- 80% token savings for Stage 3
-
-### Token Usage Example
-
-For `travel_request.pdf`:
-
-| Scenario | Total Tokens | Total Cost |
-|----------|-------------|-----------|
-| Sonnet 4.5 (all stages) | 8,171 | $0.0414 |
-| Opus 4.5 (all stages) | 8,198 | $0.2077 |
-| Hybrid (Opus + Sonnet) | 8,623 | $0.1470 |
-
-**Cost Savings:**
-- Hybrid vs Pure Opus: **29% savings** ($0.1470 vs $0.2077)
-- Hybrid vs Pure Sonnet: +$0.1056 (improved accuracy for Stage 1 vision analysis)
+### Changing LLM Model
+In `extract_from_asr.py`:
+```python
+modelId = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"  # Change to desired model
+```
 
 ---
 
-## 🔍 Quality Assurance & Validation
-### Known Limitations
+## Performance Considerations
 
-1. **Backward Arrows Detection:** While the system detects backward arrows (loops, retries), the visual distinction in some diagrams can be ambiguous. Arrows that curve or overlap may be misidentified as forward arrows, especially in dense workflow diagrams. Stage 1 prompt includes mandatory backward arrow detection but relies on clear visual separation.
+### Scalability
+- **LLM Calls**: Rate limited by AWS Bedrock (throttling)
+- **Embedding Generation**: Batched for efficiency
+- **Clustering**: O(n²) for distance matrix computation
 
-2. **Spatial Proximity Issues:** When nodes are placed very close together or arrows have overlapping paths, the LLM may struggle to correctly match arrow endpoints to source/target nodes. This can result in:
-   - Arrows connected to wrong nodes
-   - Missing arrows when paths overlap
-   - Ambiguous direction detection
-
-3. **Swimlane Handling:** Swimlanes are filtered out (visual organization only)
-
-4. **Nested Subprocesses:** Currently not decomposed (treated as single task)
-
-5. **Complex Styling:** Some styled decision nodes may be misclassified (rare)
-
-6. **Image Quality:** Very low-resolution PDFs may yield poor results
+### Optimization Tips
+1. **Caching**: Use pickle files to avoid re-running phases
+2. **Sampling**: Reduce sample size in `extract_from_asr.py`
+3. **Batch Processing**: Process transcripts in batches
+4. **Model Selection**: Use faster models (Nova Micro) for initial testing
 
 ---
 
-## 📄 Technology Stack:
+## Error Handling
 
-- AWS Bedrock (Claude models)
-- PyMuPDF for PDF processing
-- Mermaid for flowchart syntax
-- OpenCV for image enhancement
+### Common Issues
 
-### AWS Bedrock Models Used
+1. **AWS Throttling**: Implement exponential backoff
+2. **Invalid JSON from LLM**: Retry with cleaned prompt
+3. **Empty Clusters**: Adjust distance thresholds
+4. **Memory Issues**: Process data in chunks
 
-| Stage | Model | Cost (per M tokens) | Purpose |
-|-------|-------|-------------------|---------|
-| 1 | Claude Opus 4.5 | $15/$75 | Vision analysis (arrows, nodes) |
-| 2 | Claude Sonnet 4.5 | $3/$15 | Text processing (Mermaid generation) |
-| 3 | Claude Sonnet 4.5 | $3/$15 | Text processing (name extraction) |
+### Debugging
+Enable detailed logging:
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
 
 ---
+
+## Future Enhancements
+
+1. **Workflow Title Generation**: Complete `create_workflow_type_title.py`
+2. **Interactive UI**: Slider for distance threshold adjustment
+3. **Task Category Filtering**: Enable filtering by task categories
+4. **Multi-language Support**: Extend to non-English transcripts
+5. **Real-time Processing**: Stream processing for live calls
+6. **Quality Metrics Dashboard**: Visualize clustering quality
+
+---
+
+## Dependencies
+
+```txt
+pandas>=1.3.0
+scikit-learn>=0.24.0
+sentence-transformers>=2.0.0
+torch>=1.9.0
+boto3>=1.18.0
+pyyaml>=5.4.0
+tqdm>=4.60.0
+kDBCV>=0.1.0
+botocore>=1.21.0
+```
+
+---
+
+## License
+
+[Specify your license here]
+
+---
+
+## Contact & Support
+
+[Add contact information or support channels]
+
+---
+
+## Acknowledgments
+
+- **Embedding Model**: BGE (BAAI General Embedding)
+- **LLM Provider**: AWS Bedrock (Anthropic Claude)
+- **Clustering**: scikit-learn
+- **Validation**: kDBCV library
+
+---
+
+## Changelog
+
+### Version 1.0 (Current)
+- Initial implementation
+- Three-phase pipeline
+- Claude 3.5 Sonnet integration
+- Hierarchical clustering
+- Task normalization
+- Workflow sequence clustering
+
