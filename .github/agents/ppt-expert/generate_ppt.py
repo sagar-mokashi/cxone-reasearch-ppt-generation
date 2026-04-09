@@ -159,7 +159,7 @@ def _add_content_to_template_slide(slide, slide_data):
         )
         tf = content_box.text_frame
         tf.word_wrap = True
-        
+
         # Limit points
         trimmed_points = []
         for point in points[:MAX_POINTS_PER_SLIDE]:
@@ -167,7 +167,7 @@ def _add_content_to_template_slide(slide, slide_data):
             if len(text) > MAX_POINT_LENGTH:
                 text = text[:MAX_POINT_LENGTH - 1].rstrip() + "…"
             trimmed_points.append(text)
-        
+
         # Add points as bullet list
         if trimmed_points:
             p = tf.paragraphs[0]
@@ -226,7 +226,32 @@ def add_styled_title(slide, title):
     p.font.color.rgb = TITLE_COLOR
 
 
+def _extract_code_block(text):
+    value = str(text).strip()
+    if not value.startswith("```"):
+        return None
+
+    lines = value.splitlines()
+    if len(lines) >= 3 and lines[-1].strip() == "```":
+        return "\n".join(lines[1:-1]).strip()
+
+    return value.replace("```", "").strip()
+
+
 def add_body_points(slide, points):
+    normal_points = []
+    code_blocks = []
+
+    for point in points[:MAX_POINTS_PER_SLIDE]:
+        code = _extract_code_block(point)
+        if code:
+            code_blocks.append(code)
+        else:
+            text = str(point).strip()
+            if len(text) > MAX_POINT_LENGTH:
+                text = text[: MAX_POINT_LENGTH - 1].rstrip() + "…"
+            normal_points.append(text)
+
     body_box = slide.shapes.add_textbox(
         Inches(0.7),
         Inches(1.2),
@@ -242,20 +267,28 @@ def add_body_points(slide, points):
     tf.margin_bottom = Inches(0.05)
     tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
 
-    if not points:
-        return tf
+    if normal_points:
+        tf.text = f"• {normal_points[0]}"
+        for point in normal_points[1:]:
+            paragraph = tf.add_paragraph()
+            paragraph.text = f"• {point}"
 
-    trimmed_points = []
-    for point in points[:MAX_POINTS_PER_SLIDE]:
-        text = str(point).strip()
-        if len(text) > MAX_POINT_LENGTH:
-            text = text[: MAX_POINT_LENGTH - 1].rstrip() + "…"
-        trimmed_points.append(text)
+    # Render fenced code blocks inline directly below bullet points.
+    for block in code_blocks:
+        spacer = tf.add_paragraph()
+        spacer.text = ""
 
-    tf.text = f"• {trimmed_points[0]}"
-    for point in trimmed_points[1:]:
-        paragraph = tf.add_paragraph()
-        paragraph.text = f"• {point}"
+        label = tf.add_paragraph()
+        label.text = "Example:"
+        label.level = 0
+
+        for line in block.splitlines():
+            code_line = tf.add_paragraph()
+            code_line.text = line
+            code_line.level = 0
+            code_line.font.name = "Consolas"
+            code_line.font.size = Pt(12)
+            code_line.space_after = Pt(0)
 
     return tf
 

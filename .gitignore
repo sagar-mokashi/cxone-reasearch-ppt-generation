@@ -35,4 +35,4 @@ process-pdf-diagrams-with-readme/
 
 
 # Local archives
-*.zip
+# *.zip

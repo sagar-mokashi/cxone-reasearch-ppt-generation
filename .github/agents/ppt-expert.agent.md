@@ -117,14 +117,21 @@ Do not create a separate `readme_validation.md` file unless the user explicitly 
 ## Branching Logic
 - If the README passes validation:
   - Copy the existing README to `output/README.md`
-  - No further README generation needed; complete Part A and ask permission before Part B
+  - Continue to Phase 2 in **augmentation mode** to ensure Section 11 (Results) is added and Section 12 (Evaluation) is added when artifacts exist
+  - Do not skip Phase 2 after a validation pass
 - If the README fails validation or no README exists:
   - Continue to Phase 2 and generate a new `output/README.md`
 
 # Phase 2: README Generation / Refresh
 
 ## Pre-Analysis (mandatory before writing anything)
-Run this phase after Phase 1. If a README passed validation, copy it to `output/README.md` as-is and complete Part A. If no acceptable README exists, generate a new README from full code analysis.
+Run this phase after Phase 1 in all cases.
+
+Mode selection:
+- If a README passed validation: run Phase 2 in **augmentation mode**. Keep existing content, then append/normalize required sections so Section 11 always exists and Section 12 exists when evaluation artifacts are found.
+- If no acceptable README exists: run full README generation from code analysis.
+
+Phase 2 is mandatory and must complete before Part A is considered complete.
 
 Before generating any content, use the `codebase` tool to **fully read every python source file** in the repository. Read ONLY PYTHON files as it contains the code. For each file, extract:
 - All function and class names with their signatures
@@ -137,7 +144,11 @@ Before generating any content, use the `codebase` tool to **fully read every pyt
 Do NOT skim. Read the complete content of each file. Only begin writing the README after all files have been analyzed.
 
 ## README Structure
-Generate a `README.md` with EXACTLY these 10 sections in this order. Each section must meet the depth requirements below.
+README section requirements:
+- In full generation mode: create Sections 1-11 in order, and add Section 12 only if evaluation artifacts exist.
+- In augmentation mode: preserve existing sections/content, but enforce that Section 11 exists and Section 12 is added when evaluation artifacts exist.
+- Section 11 is mandatory.
+- Section 12 is conditional (optional based on artifact discovery).
 
 ---
 
@@ -244,6 +255,71 @@ List every library, framework, and service used. For each, state:
 
 ---
 
+### Section 11 — Results (Mandatory - Phase 2 must always create this)
+**Phase 2 Responsibility**: ACTIVELY search for and extract real example outputs. Do not use plaintext descriptions alone.
+
+Actions:
+1. Search for example outputs in: `examples/`, `samples/`, `results/`, `outputs/` directories, or root-level example files
+2. Extract 1-2 representative sample outputs (JSON, CSV, structured format preferred)
+3. If outputs are JSON or CSV, embed them as formatted code blocks in markdown
+4. Document:
+   - What outputs represent (e.g., "Example extracted context file showing workflow state transitions")
+   - Output schema/structure (field names, data types)
+   - How to interpret the output
+   - Success indicators (what good output looks like)
+
+5. If no example files found:
+   - Generate a hypothetical example based on Section 9 (Output & Results) technical description
+   - Format as code block anyway (show what a valid output should look like)
+   - Mark as "[Hypothetical] Example output structure"
+
+Embed results as formatted code blocks (json, csv, etc.), not plaintext.
+
+---
+
+### Section 12 — Evaluation (Optional - create when any evaluation asset is found)
+**Phase 2 Responsibility**: ACTIVELY search filesystem for evaluation scripts/artifacts. Extract metrics when present and always document methodology when evaluation assets exist.
+
+Generic-agent rule (mandatory): evaluation is optional for pipeline success, but never optional for discovery/reporting.
+
+Actions:
+1. Search for evaluation artifacts in:
+   - Directories: `evaluation/`, `eval/`, `benchmark/`, `metrics/`, `validation_report/`
+   - Files: `*evaluation*.json`, `*evaluation*.csv`, `*benchmark*.json`, `*metrics*.json`
+   - Scripts: `run_evaluation.py`, `evaluate.py`, `benchmark.py`
+
+2. If evaluation scripts or artifacts are found:
+   - Validate discovered evaluation assets (scripts, folders, result files)
+   - Document methodology from code/files: method used, how evaluation runs, inputs, outputs, and scoring logic
+   - Document execution flow: what is evaluated and how decisions/labels/scores are produced
+   - If result files exist, extract metrics and scores from JSON/CSV/XLSX
+   - Format metrics as markdown table or code block with actual numbers
+   - Extract key findings from available results
+
+3. If evaluation scripts are found but result files are not found:
+  - Still create Section 12 with methodology content inferred from scripts
+  - Add a short "Current run status" note indicating no quantitative result artifacts were present
+  - Include whether execution was attempted and exact skip reason
+
+4. If neither evaluation artifacts nor evaluation scripts are found:
+  - SKIP this section entirely (do not create)
+  - Phase 3 may omit the Evaluations slide
+
+5. Always provide an "Evaluation discovery evidence" note in chat before Part A completion:
+  - Scripts found (or none)
+  - Evaluation result files found (or none)
+  - Validation summary of discovered evaluation assets
+  - Whether execution was attempted
+  - If not executed, exact reason (missing inputs, credentials, runtime deps, or path mismatch)
+
+6. If evaluation scripts are found but result files are not found, do not silently skip:
+  - Attempt execution only when preconditions exist
+  - Otherwise continue without failure and record the explicit skip reason in the evidence note
+
+Embed metrics as markdown tables or formatted code blocks, not plaintext descriptions.
+
+---
+
 **Action**: Save using PowerShell from the workspace root and overwrite any existing file:
 ```powershell
 New-Item -ItemType Directory -Force -Path "output" | Out-Null
@@ -271,6 +347,39 @@ Use the final `output/README.md` produced in Phase 2.
 
 Read `output/README.md` and generate both the slide content and architecture diagrams.
 
+## Results and Evaluations Extraction
+
+### Results Slide (Position 5 - Always Present)
+Phase 2 ALWAYS creates Section 11 with formatted examples (JSON, CSV, or hypothetical code blocks).
+
+Phase 3 action:
+- Read Section 11 from output/README.md
+- Extract the formatted code blocks and example outputs
+- Create Results slide with:
+  - Title: "Results" or "Example Outputs"
+  - Content: Formatted example output (preserve json/csv code block formatting if present)
+  - Interpretation paragraph: What success looks like
+- This slide is MANDATORY and always appears at position 5
+
+### Evaluations Slide (Position 6 - Conditional)
+Phase 2 creates Section 12 ONLY if evaluation artifacts are found in the filesystem.
+
+Phase 3 action:
+- Check if Section 12 exists in output/README.md
+- If Section 12 exists and contains substance (metrics, methodology, findings):
+  - Create Evaluations slide with:
+    - Title: "Evaluation Results" or "Performance Validation"
+    - Content: Formatted metrics (markdown table or code block), methodology, key findings
+  - This slide appears at position 6
+- If Section 12 does not exist:
+  - SKIP Evaluations slide
+  - Adjust slide count to 10 (vs 11)
+  - Report in chat: "No evaluation data found in repository; Evaluations slide omitted (optional slide)"
+
+### Slide Count
+- With Section 12: 11 slides total
+- Without Section 12: 10 slides total
+
 ## Optional Jira Enrichment
 If the user provides a Jira Epic, Capability, or issue key in the prompt, enrich the slide content with Jira business context before generating `presentation_data.json`.
 
@@ -295,9 +404,9 @@ Jira identifier visibility rule:
 Slide mapping when Jira data exists:
 - Slide 1: Refine project context using Epic/Capability summary
 - Slide 2: Use Jira Description as the primary source for business problem framing
-- Slide 5: Use Acceptance Criteria and child stories to strengthen capabilities and business outcomes
-- Slide 8: Use Jira dependencies, blockers, and assumptions to enrich risks and implementation considerations
-- Slide 9: Use child stories or related issues to shape roadmap and next steps
+- Slide 7: Use Acceptance Criteria and child stories to strengthen capabilities and business outcomes (note: position changed from 5 due to new Results slide at position 5)
+- Slide 10: Use Jira dependencies, blockers, and assumptions to enrich risks and implementation considerations (note: position changed from 8 due to new slides)
+- Slide 11: Use child stories or related issues to shape roadmap and next steps (note: position changed from 9 due to new slides)
 
 If no Jira key is provided, skip this enrichment and generate slides from `output/README.md` only.
 
@@ -312,17 +421,23 @@ If Jira enrichment is used, report the following in chat before writing `present
 
 If Jira retrieval fails, say so in chat and continue Phase 3 using `output/README.md` only.
 
-## 2a — Slide JSON (9 slides)
+## 2a — Slide JSON (10-11 slides, dynamic based on evaluation data)
 Design a presentation with the following slide structure:
 - Slide 1: Project Overview (Name, Purpose, Context)
 - Slide 2: Business Problem (Gaps, Inefficiencies, Why it matters)
 - Slide 3: Solution Overview (High-level approach, Key idea)
 - Slide 4: Detailed Step-Wise Execution Flow (Step 1 to Step N, Input → Process → Output, how the system works end-to-end)
-- Slide 5: Core Capabilities & Architecture (Features, Logical components)
-- Slide 6: Advantages (Strengths, Business Impact)
-- Slide 7: Limitations (Known gaps, Potential issues)
-- Slide 8: Risks & Implementation Considerations (Dependencies, Constraints, Assumptions, Guardrails)
-- Slide 9: Roadmap & Next Steps (Improvements, Scaling opportunities)
+- Slide 5: Results (Format, Examples, Interpretation) — mandatory, always generated from Section 11
+- Slide 6: Evaluations (Methodology, Metrics, Key findings) — optional, included only if Section 12 exists
+- Slide 7: Core Capabilities & Architecture (Features, Logical components)
+- Slide 8: Advantages (Strengths, Business Impact)
+- Slide 9: Limitations (Known gaps, Potential issues)
+- Slide 10: Risks & Implementation Considerations (Dependencies, Constraints, Assumptions, Guardrails)
+- Slide 11: Roadmap & Next Steps (Improvements, Scaling opportunities)
+
+Slide count:
+- With Evaluations data: 11 slides
+- Without Evaluations data: 10 slides
 
 Content rules:
 - Extract a substantive `project_title` (4-6 words, meaningful not generic).
@@ -332,6 +447,7 @@ Content rules:
 - Keep the visible deck free of internal tracker identifiers, ticket numbers, and raw Jira keys unless the user explicitly requests them.
 - Replace Jira issue references with descriptive initiative names or outcome-focused wording in visible content.
 - Each slide: 5-7 concise bullet points (max ~20 words each).
+- Results slide requirement: include at least one concrete sample output example (filename plus 1-2 representative fields/values).
 - If content is limited, reduce to minimum 7 slides.
 - Return exactly one valid JSON object. Do not create alternate versions, drafts, or duplicate top-level JSON payloads.
 
